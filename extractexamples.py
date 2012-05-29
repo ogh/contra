@@ -40,11 +40,11 @@ def string_to_regex(s):
     return re.compile(exp, regex_flags)
 
 def process(f, fn, str_re_lab):
-    text = f.read()
+    text = f.read().rstrip('\n')
     docid = path.basename(fn)
 
-    assert '\t' not in text, "ERROR: source text contains tab!"
-    assert '\n' not in text, "ERROR: source text contains newline!"
+    assert '\t' not in text, "ERROR: source text (%s) contains tab!" % fn
+    assert '\n' not in text, "ERROR: source text (%s) contains newline!" % fn
 
     for s, re, label in str_re_lab:
         for m in re.finditer(text):
