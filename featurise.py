@@ -32,13 +32,15 @@ def main(args):
         f_vec = {}
         for pre_tok_i, pre_tok in enumerate(pre_toks, start=1):
             f_name = 'BEFORE-{}'.format(pre_tok)
-            f_val = 1.0 / (2 ** (pre_tok_i - 1))
+            #f_val = 1.0 / (2 ** (pre_tok_i - 1))
+            f_val = 1.0
             f_vec[f_name] = f_val
             if pre_tok_i >= 3:
                 break
         for post_tok_i, post_tok in enumerate(post_toks, start=1):
             f_name = 'AFTER-{}'.format(post_tok)
-            f_val = 1.0 / (2 ** (post_tok_i - 1))
+            #f_val = 1.0 / (2 ** (post_tok_i - 1))
+            f_val = 1.0
             f_vec[f_name] = f_val
             if post_tok_i >= 3:
                 break
