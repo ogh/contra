@@ -21,6 +21,9 @@ from tempfile import NamedTemporaryFile
 from lib.fixedseed import FixedSeed
 
 ### Constants
+F_SCORE_LBL = 'f-score'
+ACC_SCORE_LBL = 'accuracy'
+
 ARGPARSER = ArgumentParser()#XXX:
 ARGPARSER.add_argument('data')
 ARGPARSER.add_argument('model')
@@ -29,6 +32,8 @@ ARGPARSER.add_argument('-j', '--jobs', type=int, default=1)
 ARGPARSER.add_argument('-l', '--liblinear-train-cmd', default='train')
 ARGPARSER.add_argument('-s', '--seed', type=int, default=0x5648765a)
 ARGPARSER.add_argument('-v', '--verbose', action='store_true')
+ARGPARSER.add_argument('-p', '--optimisation',
+        choices=(ACC_SCORE_LBL, F_SCORE_LBL, ), default=F_SCORE_LBL)
 # TODO: C ranges
 # TODO: Model types for liblinear
 NEG_LBL = 1
@@ -36,9 +41,8 @@ POS_LBL = 2
 ###
 
 Model = namedtuple('Model', ('c', 'score', ))
-Score = namedtuple('Score', ('tp', 'tn', 'fp', 'fn', 'p', 'r', 'f', ))
 
-def _score(gold_path, pred_path):
+def _f_score(gold_path, pred_path):
     tp = 0
     tn = 0
     fp = 0
@@ -49,7 +53,8 @@ def _score(gold_path, pred_path):
                 (int(l.rstrip('\n')) for l in pred)):
             assert gold_val is not None, 'gold shorter than pred data'
             assert pred_val is not None, 'pred shorter than gold data'
-            
+
+            # XXX: Not sure if these assumptions hold outside of eepura
             if gold_val == POS_LBL and pred_val == POS_LBL:
                 tp += 1
             elif gold_val == POS_LBL and pred_val == NEG_LBL:
@@ -59,7 +64,8 @@ def _score(gold_path, pred_path):
             elif gold_val == NEG_LBL and pred_val == NEG_LBL:
                 tn += 1
             else:
-                assert False, 'unknown label values'
+                assert False, ('unknown label values, f-score only supports '
+                        'binary classification')
 
     try:
         p = float(tp) / (tp + fp)
@@ -74,7 +80,29 @@ def _score(gold_path, pred_path):
     except ZeroDivisionError:
         f = 0.0
 
-    return Score(tp=tp, tn=tn, fp=fp, fn=fn, p=p, r=r, f=f)
+    return f
+
+def _accuracy_score(gold_path, pred_path):
+    tp = 0
+    fp = 0
+    with open(gold_path, 'r') as gold, open(pred_path, 'r') as pred:
+        for gold_val, pred_val in izip_longest(
+                (int(l.split(' ')[0]) for l in gold),
+                (int(l.rstrip('\n')) for l in pred)):
+            assert gold_val is not None, 'gold shorter than pred data'
+            assert pred_val is not None, 'pred shorter than gold data'
+
+            if gold_val == pred_val:
+                tp += 1
+            else:
+                fp += 1
+
+    return tp / float(tp + fp)
+
+SCORE_F_BY_LBL = {
+        F_SCORE_LBL: _f_score,
+        ACC_SCORE_LBL: _accuracy_score,
+        }
 
 def _fold_to_idx_mapping(data_len, k=10, seed=0x510f62ce):
     idx_pool = set(xrange(data_len + 1))
@@ -109,7 +137,8 @@ def _train_model(c, train_path, model_path):
             shell=True, executable='/bin/bash') # XXX: Nasty bash path
     train_p.wait()
 
-def _eval_fold_and_c(fold_path, train_paths, c):
+def _eval_fold_and_c(fold_path, train_paths, c,
+        optimisation_target=F_SCORE_LBL):
     train_path = None
     model_path = None
     pred_path = None
@@ -142,10 +171,10 @@ def _eval_fold_and_c(fold_path, train_paths, c):
                     shell=True, executable='/bin/bash', stdout=dev_null) # XXX: Nasty bash path
             pred_p.wait()
 
-        score = _score(fold_path, pred_path)
+        score = SCORE_F_BY_LBL[optimisation_target](fold_path, pred_path)
         #print c, score
         #raw_input()
-        return Model(c=c, score=score.f)
+        return Model(c=c, score=score)
     finally:
         for path in (train_path, pred_path, model_path, ):
             if path is not None:
@@ -155,7 +184,7 @@ def __eval_fold_and_c(args):
     return _eval_fold_and_c(*args)
 
 def _find_optimal_model(data_path, folds=10, seed=0xc0236b36, pool=None,
-        verbose=False):
+        verbose=False, optimisation_target=F_SCORE_LBL):
     # Segment the data into folds
     # TODO: Could be a function
     fold_to_fold_fh = {}
@@ -194,7 +223,7 @@ def _find_optimal_model(data_path, folds=10, seed=0xc0236b36, pool=None,
             for fold_path in fold_paths:
                 curr_fold = fold_path
                 curr_train = [p for p in fold_paths if p != curr_fold]
-                yield (curr_fold, curr_train, c_value)
+                yield (curr_fold, curr_train, c_value, optimisation_target)
 
     if pool is not None:
         eval_results = pool.imap_unordered(__eval_fold_and_c, _eval_args())
@@ -229,9 +258,10 @@ def _find_optimal_model(data_path, folds=10, seed=0xc0236b36, pool=None,
     return optimal_c
 
 def train_optimal_model(model_path, data_path, folds=10, seed=0x994c00d8,
-        pool=None, verbose=False):
+        pool=None, verbose=False, optimisation_target=F_SCORE_LBL):
     optimal_c = _find_optimal_model(data_path, folds=folds, seed=seed,
-            pool=pool, verbose=verbose)
+            pool=pool, verbose=verbose,
+            optimisation_target=optimisation_target)
     _train_model(optimal_c, data_path, model_path)
     #print 'BEST C:', optimal_c
     # XXX: Train a new model on all the data!
@@ -247,7 +277,8 @@ def main(args):
         pool = None
 
     train_optimal_model(argp.model, argp.data, folds=argp.folds,
-            seed=argp.seed, pool=pool, verbose=argp.verbose)
+            seed=argp.seed, pool=pool, verbose=argp.verbose,
+            optimisation_target=argp.optimisation)
 
     return 0
 
