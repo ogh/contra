@@ -123,13 +123,13 @@ def _fold_to_idx_mapping(data_len, k=10, seed=0x510f62ce):
 
 from subprocess import Popen
 from shlex import split as shlex_split
+from os.path import dirname
 
 # XXX: TODO: Purge all bash usage!
 
 def _train_model(c, train_path, model_path):
-    # XXX: BAD BAD BAD PATH!
-    train_cmd = ("'/home/pontus/git/eepura/ext/liblinear/train"
-            " -q -c {} {} {}'").format(c, train_path,
+    train_cmd = ("'{}/ext/liblinear/train"
+            " -q -c {} {} {}'").format(dirname(__file__), c, train_path,
                 model_path)
     #print train_cmd
     train_p = Popen(
