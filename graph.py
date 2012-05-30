@@ -32,16 +32,16 @@ class Graph(object):
 
     # TODO: Raise exception if the walk can't be completed?
     # This is Depth-first
-    def walk(self, start, search, _first=True):
-        if not _first:
-            yield start
+    def walk(self, start, search, _lbl=None):
+        if _lbl is not None:
+            yield _lbl, start
 
         edges = self._edges[start]
         for lbl, next in edges.iteritems():
             try:
                 if search.accept(lbl):
-                    for node in self.walk(next, search, _first=False):
-                        yield node
+                    for res in self.walk(next, search, _lbl=lbl):
+                        yield res
                     break
             except StopGraphSearch:
                 raise StopIteration
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     print 'The Dwarfs were going to the mine in this order:', ', '.join(
             n.value for n in nodes)
     print 'We start from:', grumpy.value
-    print 'In front of him:', ', '.join(n.value for n in graph.walk(grumpy,
+    print 'In front of him:', ', '.join(n.value for _, n in graph.walk(grumpy,
         SeqLblSearch(('PRV', 'PRV', 'PRV'))))
-    print 'Behind him:', ', '.join(n.value for n in graph.walk(grumpy,
+    print 'Behind him:', ', '.join(n.value for _, n in graph.walk(grumpy,
         SeqLblSearch(('NXT', 'NXT', 'NXT'))))
