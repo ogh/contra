@@ -19,8 +19,8 @@ for size in (100, 320, 1000, 3200, ):
     BROWN_CLUSTERS_BY_SIZE[size] = path_join(BROWN_CLUSTERS_DIR,
             BROWN_CLUSTERS_FNAME_TEMPLATE.format(size))
 
-PUBMED_BROWN_CLUSTERS_PATH = join_path(CLUSTERS_DIR,
+PUBMED_BROWN_CLUSTERS_PATH = path_join(CLUSTERS_DIR,
         'pubmed_brown/PubMed-random-100K-c500-p1.out/paths')
 
-PHRASE_CLUSTERS_PATH = join_path(CLUSTERS_DIR,
+PHRASE_CLUSTERS_PATH = path_join(CLUSTERS_DIR,
         'google/phraseClusters.toks.txt')
