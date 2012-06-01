@@ -10,7 +10,7 @@ Version:    2012-05-29
 from argparse import ArgumentParser
 from sys import stdin, stdout, stderr
 
-from clusters import BrownReader, GoogleReader
+from clusters import BrownReader, GoogleReader, DavidReader
 from config import BROWN_CLUSTERS_BY_SIZE
 from it import nwise
 from graph import prev_next_graph, SeqLblSearch
@@ -21,6 +21,7 @@ BOW_TAG = 'bow'
 COMP_TAG = 'comp'
 BROWN_TAG = 'brown'
 GOOGLE_TAG = 'google'
+DAVID_TAG = 'david'
 # From Turian et al. (2010)
 BROWN_GRAMS = (4, 6, 10, 20, )
 # Could be: 100, 320, 1000 or 3200
@@ -30,7 +31,7 @@ GOOGLE_READER = None
 
 ARGPARSER = ArgumentParser()#XXX:
 ARGPARSER.add_argument('-f', '--features',
-        choices=(BOW_TAG, COMP_TAG, BROWN_TAG, GOOGLE_TAG, ),
+        choices=(BOW_TAG, COMP_TAG, BROWN_TAG, GOOGLE_TAG, DAVID_TAG, ),
         # TODO: Update the default to the best one we got after experiments
         default=BOW_TAG)
 
@@ -95,6 +96,32 @@ def _brown_featurise(nodes, graph, focus):
             # Only generate if we actually have an entry in the cluster
             pass
 
+DAVID_READER = None
+def _david_featurise(nodes, graph, focus):
+    # "Inherit" all competitive features
+    for res in _comp_featurise(nodes, graph, focus):
+        yield res
+
+    global DAVID_READER
+    if DAVID_READER is None:
+        from config import DAVID_CLUSTERS_PATH
+        with open(DAVID_CLUSTERS_PATH, 'r') as david_file:
+            DAVID_READER = DavidReader(l.rstrip('\n') for l in david_file)
+
+    # XXX: TODO: Limited to three steps
+    for _, lbl_path, node in chain(
+            graph.walk(focus, SeqLblSearch(('PRV', 'PRV', 'PRV'))),
+            graph.walk(focus, SeqLblSearch(('NXT', 'NXT', 'NXT')))
+            ):
+        try:
+            david_cluster = DAVID_READER[node.value]
+            f_name = 'DAVID-{0}-{1}'.format('-'.join(lbl_path),
+                    david_cluster)
+            yield f_name, 1.0
+        except KeyError:
+            # Only generate if we actually have an entry in the cluster
+            pass
+
 def _google_featurise(nodes, graph, focus):
     # "Inherit" all competitive features
     for res in _comp_featurise(nodes, graph, focus):
@@ -124,6 +151,7 @@ F_FUNC_BY_F_SET = {
         COMP_TAG: _comp_featurise,
         BROWN_TAG: _brown_featurise,
         GOOGLE_TAG: _google_featurise,
+        DAVID_TAG: _david_featurise,
         }
 
 def main(args):

@@ -24,3 +24,6 @@ PUBMED_BROWN_CLUSTERS_PATH = path_join(CLUSTERS_DIR,
 
 PHRASE_CLUSTERS_PATH = path_join(CLUSTERS_DIR,
         'google/phraseClusters.toks.txt')
+
+DAVID_CLUSTERS_PATH = path_join(CLUSTERS_DIR,
+        'david/pubmed_abstract_corpus_big.clusters.45')
