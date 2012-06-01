@@ -10,6 +10,8 @@ Version:    2012-05-30
 from collections import namedtuple, defaultdict
 from itertools import tee, izip
 
+from it import nwise
+
 Node = namedtuple('Node', ('id', 'value', ))
 
 
@@ -32,15 +34,18 @@ class Graph(object):
 
     # TODO: Raise exception if the walk can't be completed?
     # This is Depth-first
-    def walk(self, start, search, _lbl=None):
+    def walk(self, start, search, _lbl=None, _lbl_path=None):
+        if _lbl_path is None:
+            _lbl_path = tuple()
         if _lbl is not None:
-            yield _lbl, start
+            yield _lbl, _lbl_path, start
 
         edges = self._edges[start]
         for lbl, next in edges.iteritems():
             try:
                 if search.accept(lbl):
-                    for res in self.walk(next, search, _lbl=lbl):
+                    for res in self.walk(next, search, _lbl=lbl,
+                            _lbl_path=tuple(_lbl_path + (lbl, ))):
                         yield res
                     break
             except StopGraphSearch:
@@ -76,18 +81,12 @@ class SeqLblSearch(object):
             return False
 
 
-# TODO: Should be generalized into n-wise
-def pairwise(it):
-    a, b = tee(it)
-    next(b, None)
-    return izip(a, b)
-
 def prev_next_graph(seq):
     graph = Graph()
     nodes = [graph.add_node(val) for val in seq]
-    for _from, to in pairwise(nodes):
+    for _from, to in nwise(nodes, 2):
         graph.add_edge(_from, 'NXT', to)
-    for _from, to in pairwise(nodes[::-1]):
+    for _from, to in nwise(nodes[::-1], 2):
         graph.add_edge(_from, 'PRV', to)
     return graph, nodes
 
@@ -107,7 +106,7 @@ if __name__ == '__main__':
     print 'The Dwarfs were going to the mine in this order:', ', '.join(
             n.value for n in nodes)
     print 'We start from:', grumpy.value
-    print 'In front of him:', ', '.join(n.value for _, n in graph.walk(grumpy,
+    print 'In front of him:', ', '.join(n.value for _, _, n in graph.walk(grumpy,
         SeqLblSearch(('PRV', 'PRV', 'PRV'))))
-    print 'Behind him:', ', '.join(n.value for _, n in graph.walk(grumpy,
+    print 'Behind him:', ', '.join(n.value for _, _, n in graph.walk(grumpy,
         SeqLblSearch(('NXT', 'NXT', 'NXT'))))
