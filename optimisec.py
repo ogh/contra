@@ -160,8 +160,9 @@ def _eval_fold_and_c(fold_path, train_paths, c,
         with NamedTemporaryFile('w', delete=False) as pred_file:
             pred_path = pred_file.name
 
-        pred_cmd = ("'/home/pontus/git/eepura/ext/liblinear/predict"
-                    " {} {} {}'").format(fold_path, model_path, pred_path)
+        pred_cmd = ("'{}/ext/liblinear/predict"
+                    " {} {} {}'").format(dirname(__file__), fold_path,
+                            model_path, pred_path)
         #print pred_cmd
         #raw_input()
         # liblinear won't shut-up...
