@@ -45,7 +45,7 @@ def _bow_featurise(nodes, graph, focus):
             graph.walk(focus, SeqLblSearch(('PRV', 'PRV', 'PRV'))),
             graph.walk(focus, SeqLblSearch(('NXT', 'NXT', 'NXT')))
             ):
-        yield 'BOW-{}'.format(node.value), 1.0
+        yield 'BOW-{0}'.format(node.value), 1.0
 
 def _comp_featurise(nodes, graph, focus):
     # XXX: TODO: Limited to three steps
@@ -54,7 +54,7 @@ def _comp_featurise(nodes, graph, focus):
             graph.walk(focus, SeqLblSearch(('PRV', 'PRV', 'PRV'))),
             graph.walk(focus, SeqLblSearch(('NXT', 'NXT', 'NXT')))
             ):
-        f_name = 'WEIGHTED-POSITIONAL-{}-{}'.format('-'.join(lbl_path),
+        f_name = 'WEIGHTED-POSITIONAL-{0}-{1}'.format('-'.join(lbl_path),
                 node.value)
         f_val = 1.0 / (2 ** (len(lbl_path) - 1))
         yield f_name, f_val
@@ -62,7 +62,7 @@ def _comp_featurise(nodes, graph, focus):
     # Token grams
     for gram_size in (3, ):
         for tok_gram in nwise((n.value for n in nodes), gram_size):
-            yield 'TOK-GRAM-{}-{}'.format(gram_size, '-'.join(tok_gram)), 1.0
+            yield 'TOK-GRAM-{0}-{1}'.format(gram_size, '-'.join(tok_gram)), 1.0
 
 def _brown_featurise(nodes, graph, focus):
     # "Inherit" all competitive features
@@ -88,7 +88,7 @@ def _brown_featurise(nodes, graph, focus):
                 if len(brown_cluster) < brown_gram:
                     # Don't overgenerate if we don't have enough grams
                     break
-                f_name = 'BROWN-{}-{}'.format('-'.join(lbl_path),
+                f_name = 'BROWN-{0}-{1}'.format('-'.join(lbl_path),
                         brown_cluster)
                 yield f_name, 1.0
         except KeyError:
@@ -113,7 +113,7 @@ def _google_featurise(nodes, graph, focus):
         try:
             distance_by_cluster = GOOGLE_READER[node.value]
             for cluster, distance in distance_by_cluster.iteritems():
-                f_name = 'GOOGLE-{}-{}'.format('-'.join(lbl_path), cluster)
+                f_name = 'GOOGLE-{0}-{1}'.format('-'.join(lbl_path), cluster)
                 yield f_name, distance
         except KeyError:
             # Only generate if we actually have an entry in the cluster
@@ -158,7 +158,7 @@ def main(args):
 
         stdout.write(lbl)
         stdout.write('\t')
-        stdout.write(' '.join('{}:{}'.format(f_name, f_vec[f_name])
+        stdout.write(' '.join('{0}:{1}'.format(f_name, f_vec[f_name])
             for f_name in sorted(f_vec)))
         stdout.write('\n')
 

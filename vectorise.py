@@ -105,8 +105,8 @@ def main(args):
             #print f_name, f_val
             f_vec[fid_to_fname[f_name]] = f_val
 
-        argp.output.write('{} {}\n'.format(f_type_id, ' '.join(
-            '{}:{}'.format(f_id, f_vec[f_id]) for f_id in sorted(f_vec.keys()))))
+        argp.output.write('{0} {1}\n'.format(f_type_id, ' '.join(
+            '{0}:{1}'.format(f_id, f_vec[f_id]) for f_id in sorted(f_vec.keys()))))
         #print f_type_id
 
 if __name__ == '__main__':

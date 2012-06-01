@@ -47,25 +47,26 @@ def _f_score(gold_path, pred_path):
     tn = 0
     fp = 0
     fn = 0
-    with open(gold_path, 'r') as gold, open(pred_path, 'r') as pred:
-        for gold_val, pred_val in izip_longest(
-                (int(l.split(' ')[0]) for l in gold),
-                (int(l.rstrip('\n')) for l in pred)):
-            assert gold_val is not None, 'gold shorter than pred data'
-            assert pred_val is not None, 'pred shorter than gold data'
+    with open(gold_path, 'r') as gold:
+        with open(pred_path, 'r') as pred:
+            for gold_val, pred_val in izip_longest(
+                    (int(l.split(' ')[0]) for l in gold),
+                    (int(l.rstrip('\n')) for l in pred)):
+                assert gold_val is not None, 'gold shorter than pred data'
+                assert pred_val is not None, 'pred shorter than gold data'
 
-            # XXX: Not sure if these assumptions hold outside of eepura
-            if gold_val == POS_LBL and pred_val == POS_LBL:
-                tp += 1
-            elif gold_val == POS_LBL and pred_val == NEG_LBL:
-                fn += 1
-            elif gold_val == NEG_LBL and pred_val == POS_LBL:
-                fp += 1
-            elif gold_val == NEG_LBL and pred_val == NEG_LBL:
-                tn += 1
-            else:
-                assert False, ('unknown label values, f-score only supports '
-                        'binary classification')
+                # XXX: Not sure if these assumptions hold outside of eepura
+                if gold_val == POS_LBL and pred_val == POS_LBL:
+                    tp += 1
+                elif gold_val == POS_LBL and pred_val == NEG_LBL:
+                    fn += 1
+                elif gold_val == NEG_LBL and pred_val == POS_LBL:
+                    fp += 1
+                elif gold_val == NEG_LBL and pred_val == NEG_LBL:
+                    tn += 1
+                else:
+                    assert False, ('unknown label values, f-score only supports '
+                            'binary classification')
 
     try:
         p = float(tp) / (tp + fp)
@@ -85,17 +86,18 @@ def _f_score(gold_path, pred_path):
 def _accuracy_score(gold_path, pred_path):
     tp = 0
     fp = 0
-    with open(gold_path, 'r') as gold, open(pred_path, 'r') as pred:
-        for gold_val, pred_val in izip_longest(
-                (int(l.split(' ')[0]) for l in gold),
-                (int(l.rstrip('\n')) for l in pred)):
-            assert gold_val is not None, 'gold shorter than pred data'
-            assert pred_val is not None, 'pred shorter than gold data'
+    with open(gold_path, 'r') as gold:
+        with open(pred_path, 'r') as pred:
+            for gold_val, pred_val in izip_longest(
+                    (int(l.split(' ')[0]) for l in gold),
+                    (int(l.rstrip('\n')) for l in pred)):
+                assert gold_val is not None, 'gold shorter than pred data'
+                assert pred_val is not None, 'pred shorter than gold data'
 
-            if gold_val == pred_val:
-                tp += 1
-            else:
-                fp += 1
+                if gold_val == pred_val:
+                    tp += 1
+                else:
+                    fp += 1
 
     return tp / float(tp + fp)
 
@@ -128,8 +130,8 @@ from os.path import dirname
 # XXX: TODO: Purge all bash usage!
 
 def _train_model(c, train_path, model_path):
-    train_cmd = ("'{}/ext/liblinear/train"
-            " -q -c {} {} {}'").format(dirname(__file__), c, train_path,
+    train_cmd = ("'{0}/ext/liblinear/train"
+            " -q -c {1} {2} {3}'").format(dirname(__file__), c, train_path,
                 model_path)
     #print train_cmd
     train_p = Popen(
@@ -160,8 +162,8 @@ def _eval_fold_and_c(fold_path, train_paths, c,
         with NamedTemporaryFile('w', delete=False) as pred_file:
             pred_path = pred_file.name
 
-        pred_cmd = ("'{}/ext/liblinear/predict"
-                    " {} {} {}'").format(dirname(__file__), fold_path,
+        pred_cmd = ("'{0}/ext/liblinear/predict"
+                    " {1} {2} {3}'").format(dirname(__file__), fold_path,
                             model_path, pred_path)
         #print pred_cmd
         #raw_input()
@@ -244,7 +246,7 @@ def _find_optimal_model(data_path, folds=10, seed=0xc0236b36, pool=None,
     if verbose:
         avg_models.sort(key=lambda x : x.c)
         for model in avg_models:
-            print >> stderr, '{}\t{}'.format(model.c, model.score)
+            print >> stderr, '{0}\t{1}'.format(model.c, model.score)
     avg_models.sort(key=lambda x : x.score)
     optimal_c = avg_models[-1].c
     if verbose:
@@ -252,8 +254,8 @@ def _find_optimal_model(data_path, folds=10, seed=0xc0236b36, pool=None,
 
     # Small paranoid check
     if optimal_c == c_values[0] or optimal_c == c_values[-1]:
-        print >> stderr, ('WARNING: Optimal C value {} found on the boundary '
-                'of tested values [{}], we could potentially have missed '
+        print >> stderr, ('WARNING: Optimal C value {0} found on the boundary '
+                'of tested values [{1}], we could potentially have missed '
                 'the optimum').format(optimal_c,
                         ', '.join(str(c) for c in c_values[::-1]))
     return optimal_c

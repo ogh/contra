@@ -13,7 +13,7 @@ CLUSTERS_DIR = path_join(ROOT_DIR, 'res/clusters')
 TURIAN_DIR = path_join(CLUSTERS_DIR, 'turian_et_al_2010_clusters')
 
 BROWN_CLUSTERS_DIR = path_join(TURIAN_DIR, 'brown-clusters-ACL2010')
-BROWN_CLUSTERS_FNAME_TEMPLATE = 'brown-rcv1.clean.tokenized-CoNLL03.txt-c{}-freq1.txt'
+BROWN_CLUSTERS_FNAME_TEMPLATE = 'brown-rcv1.clean.tokenized-CoNLL03.txt-c{0}-freq1.txt'
 BROWN_CLUSTERS_BY_SIZE = {}
 for size in (100, 320, 1000, 3200, ):
     BROWN_CLUSTERS_BY_SIZE[size] = path_join(BROWN_CLUSTERS_DIR,
