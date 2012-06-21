@@ -5,6 +5,9 @@
 # Author:   Pontus Stenetorp    <pontus stenetorp>
 # Version:  2012-05-29
 
+# Exit on error
+set -e
+
 # TODO: Leave a "run-directory" in the work directory for later analysis
 
 WRK_DIR=wrk
