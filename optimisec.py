@@ -217,7 +217,10 @@ def _find_optimal_model(data_path, folds=10, seed=0xc0236b36, pool=None,
     fold_paths = [fh.name for fh in fold_to_fold_fh.itervalues()]
    
     # XXX: Hard-coded C;s
-    c_values = [2 ** c_pow for c_pow in xrange(17, -7, -2)]
+    #c_values = [2 ** c_pow for c_pow in xrange(17, -7, -2)]
+    # tweaked after a bit of a look at curves for the "bow",
+    # "comp" and "david" models.
+    c_values = [2 ** c_pow for c_pow in xrange(5, -7, -1)]
     # Evaluate all C-values to find the optimal model
     def _eval_args():
         # Order motivated due to high c;s being likely to take longer, we thus

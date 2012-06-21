@@ -12,7 +12,7 @@ Version:    2012-01-13
 from argparse import ArgumentParser, FileType
 from atexit import register as atexit_register
 from os.path import isfile
-from sys import stdin, stdout
+from sys import stdin, stdout, stderr
 
 try:
     from cPickle import (HIGHEST_PROTOCOL, dump as pickle_dump,
@@ -50,8 +50,12 @@ class IdMapper(dict):
 
 def _load_pickle(pickle_path, save=True):
     if isfile(pickle_path):
-        with open(pickle_path, 'rb') as pickle_file:
-            loaded_pickle = pickle_load(pickle_file)
+        try:
+            with open(pickle_path, 'rb') as pickle_file:
+                loaded_pickle = pickle_load(pickle_file)
+        except EOFError, e:
+            print >> stderr, "failed to load pickle %s: %s" % (pickle_path, e)
+            raise
     else:
         loaded_pickle = IdMapper()
 

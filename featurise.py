@@ -25,7 +25,7 @@ DAVID_TAG = 'david'
 # From Turian et al. (2010)
 BROWN_GRAMS = (4, 6, 10, 20, )
 # Could be: 100, 320, 1000 or 3200
-BROWN_SIZE = 3200
+BROWN_SIZE = 1000
 BROWN_READER = None
 GOOGLE_READER = None
 
@@ -34,6 +34,10 @@ ARGPARSER.add_argument('-f', '--features',
         choices=(BOW_TAG, COMP_TAG, BROWN_TAG, GOOGLE_TAG, DAVID_TAG, ),
         # TODO: Update the default to the best one we got after experiments
         default=BOW_TAG)
+ARGPARSER.add_argument('-b', '--brownsize',
+        choices=('50', '150', '500', '1000', ),
+        # TODO: Update the default to the best one we got after experiments
+        default=None)
 
 FOCUS_DUMMY = "('^_^)WhatAmIDoingHere?"
 ###
@@ -73,10 +77,14 @@ def _brown_featurise(nodes, graph, focus):
     global BROWN_READER
     if BROWN_READER is None:
         # For experiments with different size non-PubMed clusters
-        #with open(BROWN_CLUSTERS_BY_SIZE[BROWN_SIZE], 'r') as brown_file:
-        from config import PUBMED_BROWN_CLUSTERS_PATH
-        with open(PUBMED_BROWN_CLUSTERS_PATH, 'r') as brown_file:
+        from config import PUBMED_BROWN_CLUSTERS_BY_SIZE
+        with open(PUBMED_BROWN_CLUSTERS_BY_SIZE[BROWN_SIZE], 'r') as brown_file:
             BROWN_READER = BrownReader(l.rstrip('\n') for l in brown_file)
+
+        # single size
+        # from config import PUBMED_BROWN_CLUSTERS_PATH
+        # with open(PUBMED_BROWN_CLUSTERS_PATH, 'r') as brown_file:
+        #     BROWN_READER = BrownReader(l.rstrip('\n') for l in brown_file)
 
     # XXX: TODO: Limited to three steps
     for _, lbl_path, node in chain(
@@ -156,6 +164,10 @@ F_FUNC_BY_F_SET = {
 
 def main(args):
     argp = ARGPARSER.parse_args(args[1:])
+
+    if argp.brownsize is not None:
+        global BROWN_SIZE
+        BROWN_SIZE = int(argp.brownsize)        
 
     for line in (l.rstrip('\n') for l in stdin):
         _, lbl, pre, _, post = line.split('\t')
