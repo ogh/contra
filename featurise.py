@@ -8,10 +8,12 @@ Version:    2012-05-29
 '''
 
 from argparse import ArgumentParser
+from collections import defaultdict
+from functools import partial
 from sys import stdin, stdout, stderr
 
 from clusters import BrownReader, GoogleReader, DavidReader
-from config import BROWN_CLUSTERS_BY_SIZE
+from config import BROWN_CLUSTERS_BY_SIZE, PUBMED_BROWN_CLUSTERS_BY_SIZE
 from it import nwise
 from graph import prev_next_graph, SeqLblSearch
 from gtbtokenize import tokenize
@@ -19,25 +21,14 @@ from gtbtokenize import tokenize
 ### Constants
 BOW_TAG = 'bow'
 COMP_TAG = 'comp'
-BROWN_TAG = 'brown'
+BROWN_TAG = 'brown-{0}'
+PUBMED_BROWN_TAG = 'pubmed_brown-{0}'
 GOOGLE_TAG = 'google'
 DAVID_TAG = 'david'
 # From Turian et al. (2010)
 BROWN_GRAMS = (4, 6, 10, 20, )
-# Could be: 100, 320, 1000 or 3200
-BROWN_SIZE = 1000
-BROWN_READER = None
+BROWN_READERS = defaultdict(dict)
 GOOGLE_READER = None
-
-ARGPARSER = ArgumentParser()#XXX:
-ARGPARSER.add_argument('-f', '--features',
-        choices=(BOW_TAG, COMP_TAG, BROWN_TAG, GOOGLE_TAG, DAVID_TAG, ),
-        # TODO: Update the default to the best one we got after experiments
-        default=BOW_TAG, nargs='+')
-ARGPARSER.add_argument('-b', '--brownsize',
-        choices=(50, 150, 500, 1000, ),
-        # TODO: Update the default to the best one we got after experiments
-        default=1000, type=int)
 
 FOCUS_DUMMY = "('^_^)WhatAmIDoingInAFeatureRepresentation?"
 ###
@@ -69,18 +60,16 @@ def _comp_featurise(nodes, graph, focus):
         for tok_gram in nwise((n.value for n in nodes), gram_size):
             yield 'TOK-GRAM-{0}-{1}'.format(gram_size, '-'.join(tok_gram)), 1.0
 
-def _brown_featurise(nodes, graph, focus):
-    global BROWN_READER
-    if BROWN_READER is None:
-        # For experiments with different size non-PubMed clusters
-        from config import PUBMED_BROWN_CLUSTERS_BY_SIZE
-        with open(PUBMED_BROWN_CLUSTERS_BY_SIZE[BROWN_SIZE], 'r') as brown_file:
-            BROWN_READER = BrownReader(l.rstrip('\n') for l in brown_file)
-
-        # single size
-        # from config import PUBMED_BROWN_CLUSTERS_PATH
-        # with open(PUBMED_BROWN_CLUSTERS_PATH, 'r') as brown_file:
-        #     BROWN_READER = BrownReader(l.rstrip('\n') for l in brown_file)
+def _brown_featurise(clusters_by_size, size, nodes, graph, focus):
+    # TODO: This is not a particularily pretty way to handle the readers
+    global BROWN_READERS
+    reader_key = ''.join(str(k) for k in clusters_by_size)
+    try:
+        reader = BROWN_READERS[reader_key][size]
+    except KeyError:
+        with open(clusters_by_size[size], 'r') as brown_file:
+            reader = BrownReader(l.rstrip('\n') for l in brown_file)
+        BROWN_READERS[reader_key][size] = reader
 
     # XXX: TODO: Limited to three steps
     for _, lbl_path, node in chain(
@@ -88,12 +77,12 @@ def _brown_featurise(nodes, graph, focus):
             graph.walk(focus, SeqLblSearch(('NXT', 'NXT', 'NXT')))
             ):
         try:
-            brown_cluster = BROWN_READER[node.value]
+            brown_cluster = reader[node.value]
             for brown_gram in BROWN_GRAMS:
                 if len(brown_cluster) < brown_gram:
                     # Don't overgenerate if we don't have enough grams
                     break
-                f_name = 'BROWN-{0}-{1}-{2}'.format(BROWN_SIZE,
+                f_name = 'BROWN-{0}-{1}-{2}'.format(size,
                         '-'.join(lbl_path), brown_cluster)
                 yield f_name, 1.0
         except KeyError:
@@ -142,20 +131,35 @@ def _google_featurise(nodes, graph, focus):
             # Only generate if we actually have an entry in the cluster
             pass
 
+### Trailing constants
 F_FUNC_BY_F_SET = {
         BOW_TAG: _bow_featurise,
         COMP_TAG: _comp_featurise,
-        BROWN_TAG: _brown_featurise,
         GOOGLE_TAG: _google_featurise,
         DAVID_TAG: _david_featurise,
         }
+# Since the Brown clusters have sizes, we treat them specially
+for brown_size in BROWN_CLUSTERS_BY_SIZE:
+    F_FUNC_BY_F_SET[BROWN_TAG.format(brown_size)] = partial(_brown_featurise,
+            BROWN_CLUSTERS_BY_SIZE, brown_size)
+for brown_size in PUBMED_BROWN_CLUSTERS_BY_SIZE:
+    F_FUNC_BY_F_SET[PUBMED_BROWN_TAG.format(brown_size)] = partial(
+            _brown_featurise, PUBMED_BROWN_CLUSTERS_BY_SIZE, brown_size)
+###
+
+def _argparser():
+    argparser = ArgumentParser()#XXX:
+    argparser.add_argument('-f', '--features',
+            choices=tuple(sorted(s for s in F_FUNC_BY_F_SET)),
+            action='append')
+    return argparser
 
 def main(args):
-    argp = ARGPARSER.parse_args(args[1:])
+    argp = _argparser().parse_args(args[1:])
 
-    # TODO: Horrible, kill it with fire!
-    global BROWN_SIZE
-    BROWN_SIZE = argp.brownsize
+    # TODO: Update the default to the best one we got after experiments
+    # TODO: Adding a default has unforeseen consequences
+    assert argp.features
 
     for line in (l.rstrip('\n') for l in stdin):
         _, lbl, pre, _, post = line.split('\t')
