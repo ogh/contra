@@ -70,10 +70,6 @@ def _comp_featurise(nodes, graph, focus):
             yield 'TOK-GRAM-{0}-{1}'.format(gram_size, '-'.join(tok_gram)), 1.0
 
 def _brown_featurise(nodes, graph, focus):
-    # "Inherit" all competitive features
-    for res in _comp_featurise(nodes, graph, focus):
-        yield res
-
     global BROWN_READER
     if BROWN_READER is None:
         # For experiments with different size non-PubMed clusters
@@ -106,10 +102,6 @@ def _brown_featurise(nodes, graph, focus):
 
 DAVID_READER = None
 def _david_featurise(nodes, graph, focus):
-    # "Inherit" all competitive features
-    for res in _comp_featurise(nodes, graph, focus):
-        yield res
-
     global DAVID_READER
     if DAVID_READER is None:
         from config import DAVID_CLUSTERS_PATH
@@ -131,10 +123,6 @@ def _david_featurise(nodes, graph, focus):
             pass
 
 def _google_featurise(nodes, graph, focus):
-    # "Inherit" all competitive features
-    for res in _comp_featurise(nodes, graph, focus):
-        yield res
-
     global GOOGLE_READER
     if GOOGLE_READER is None:
         from config import PHRASE_CLUSTERS_PATH
