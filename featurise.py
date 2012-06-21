@@ -33,13 +33,13 @@ ARGPARSER = ArgumentParser()#XXX:
 ARGPARSER.add_argument('-f', '--features',
         choices=(BOW_TAG, COMP_TAG, BROWN_TAG, GOOGLE_TAG, DAVID_TAG, ),
         # TODO: Update the default to the best one we got after experiments
-        default=BOW_TAG)
+        default=BOW_TAG, nargs='+')
 ARGPARSER.add_argument('-b', '--brownsize',
-        choices=('50', '150', '500', '1000', ),
+        choices=(50, 150, 500, 1000, ),
         # TODO: Update the default to the best one we got after experiments
-        default=None)
+        default=1000, type=int)
 
-FOCUS_DUMMY = "('^_^)WhatAmIDoingHere?"
+FOCUS_DUMMY = "('^_^)WhatAmIDoingInAFeatureRepresentation?"
 ###
 
 from itertools import chain
@@ -97,8 +97,8 @@ def _brown_featurise(nodes, graph, focus):
                 if len(brown_cluster) < brown_gram:
                     # Don't overgenerate if we don't have enough grams
                     break
-                f_name = 'BROWN-{0}-{1}'.format('-'.join(lbl_path),
-                        brown_cluster)
+                f_name = 'BROWN-{0}-{1}-{2}'.format(BROWN_SIZE,
+                        '-'.join(lbl_path), brown_cluster)
                 yield f_name, 1.0
         except KeyError:
             # Only generate if we actually have an entry in the cluster
@@ -165,9 +165,9 @@ F_FUNC_BY_F_SET = {
 def main(args):
     argp = ARGPARSER.parse_args(args[1:])
 
-    if argp.brownsize is not None:
-        global BROWN_SIZE
-        BROWN_SIZE = int(argp.brownsize)        
+    # TODO: Horrible, kill it with fire!
+    global BROWN_SIZE
+    BROWN_SIZE = argp.brownsize
 
     for line in (l.rstrip('\n') for l in stdin):
         _, lbl, pre, _, post = line.split('\t')
@@ -188,9 +188,9 @@ def main(args):
             assert False
 
         f_vec = {}
-        for f_name, f_val in F_FUNC_BY_F_SET[argp.features](nodes, graph,
-                focus):
-            f_vec[f_name] = f_val
+        for f_set in argp.features:
+            for f_name, f_val in F_FUNC_BY_F_SET[f_set](nodes, graph, focus):
+                f_vec[f_name] = f_val
 
         if not f_vec:
             print >> stderr, 'WARNING: No features generated!'
