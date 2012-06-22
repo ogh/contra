@@ -14,7 +14,8 @@ then
 fi
 CONT_FILE=$1
 
-CUT_OFF=200
+# Used 100 for dev, 150 for test, 200 for train
+CUT_OFF=150
 
 SEEDS=`cut -f 4 ${CONT_FILE} | sort | uniq`
 
