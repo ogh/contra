@@ -11,7 +11,7 @@ from argparse import ArgumentParser
 from atexit import register as atexit_register
 from collections import defaultdict, namedtuple
 from itertools import izip_longest
-from math import fsum
+from math import fsum, log
 from os import remove
 from random import sample
 from shutil import move
@@ -32,6 +32,7 @@ ARGPARSER.add_argument('-j', '--jobs', type=int, default=1)
 ARGPARSER.add_argument('-l', '--liblinear-train-cmd', default='train')
 ARGPARSER.add_argument('-s', '--seed', type=int, default=0x5648765a)
 ARGPARSER.add_argument('-v', '--verbose', action='store_true')
+ARGPARSER.add_argument('-c', '--print-c', action='store_true')
 ARGPARSER.add_argument('-p', '--optimisation',
         choices=(ACC_SCORE_LBL, F_SCORE_LBL, ), default=F_SCORE_LBL)
 # TODO: C ranges
@@ -264,14 +265,15 @@ def _find_optimal_model(data_path, folds=10, seed=0xc0236b36, pool=None,
     return optimal_c
 
 def train_optimal_model(model_path, data_path, folds=10, seed=0x994c00d8,
-        pool=None, verbose=False, optimisation_target=F_SCORE_LBL):
+        pool=None, verbose=False, optimisation_target=F_SCORE_LBL,
+        print_c=False):
     optimal_c = _find_optimal_model(data_path, folds=folds, seed=seed,
             pool=pool, verbose=verbose,
             optimisation_target=optimisation_target)
+    if print_c:
+        print >> stderr, 'Optimal C found: {} (C-POW: {})'.format(optimal_c,
+                log(optimal_c, 2))
     _train_model(optimal_c, data_path, model_path)
-    #print 'BEST C:', optimal_c
-    # XXX: Train a new model on all the data!
-    #move(best_model.path, model_path)
 
 def main(args):
     argp = ARGPARSER.parse_args(args[1:])
@@ -284,7 +286,7 @@ def main(args):
 
     train_optimal_model(argp.model, argp.data, folds=argp.folds,
             seed=argp.seed, pool=pool, verbose=argp.verbose,
-            optimisation_target=argp.optimisation)
+            optimisation_target=argp.optimisation, print_c=argp.print_c)
 
     return 0
 
