@@ -22,7 +22,7 @@ for size in (100, 320, 1000, 3200, ):
 PUBMED_BROWN_CLUSTERS_DIR = path_join(CLUSTERS_DIR, 'pubmed_brown')
 PUBMED_BROWN_CLUSTERS_FNAME_TEMPLATE = 'PubMed-random-100K-c{0}-paths'
 PUBMED_BROWN_CLUSTERS_BY_SIZE = {}
-for size in (150, 500, 1000, ):
+for size in (100, 320, 1000, ):
     PUBMED_BROWN_CLUSTERS_BY_SIZE[size] = path_join(PUBMED_BROWN_CLUSTERS_DIR,
             PUBMED_BROWN_CLUSTERS_FNAME_TEMPLATE.format(size))
 
