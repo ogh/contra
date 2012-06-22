@@ -5,12 +5,54 @@
 # Author:   Pontus Stenetorp    <pontus stenetorp>
 # Version:  2012-05-29
 
+### Configuration
+# Maximum number of processes to use (you can enjoy quite a speed-up)
+JOBS=1
+# Note: Only set this one to true for the final experiments
+USE_TEST=false
+# Path to all data
+# TODO: Should be separated into train, test and dev paths.
+DATA_PATH=res/data/full
+# Stratified on non-stratified
+# TODO: Improve the functionality here
+TRAIN_SET=conts.strat
+# Models for the publication tables:
+# 'bow'
+# 'comp'
+# 'comp brown-100'
+# 'comp brown-320'
+# 'comp brown-1000'
+# 'comp brown-3200'
+# 'comp pubmed_brown-100'
+# 'comp pubmed_brown-320'
+# 'comp pubmed_brown-1000'
+# 'comp david'
+# 'comp google'
+
+# Models for the publication learning curves:
+# 'comp'
+# 'comp david pubmed_brown-1000'
+# 'comp google'
+
+# Feature set combinations to use for this run
+SETS_TO_RUN='
+    comp
+    comp david pubmed_brown-1000
+    comp google
+    bow
+    comp brown-100
+    comp brown-320
+    comp brown-1000
+    comp brown-3200
+    comp pubmed_brown-100
+    comp pubmed_brown-320
+    comp pubmed_brown-1000
+    comp david
+    '
+###
+
 # Exit on error
 set -e
-
-# TODO: Leave a "run-directory" in the work directory for later analysis
-
-JOBS=64
 
 WRK_DIR=wrk
 TRAIN_FEATS=${WRK_DIR}/train.feats
@@ -20,135 +62,59 @@ DEV_VECS=${WRK_DIR}/dev.vecs
 MODEL=${WRK_DIR}/train.model
 C_POW=${WRK_DIR}/opt_c_pow
 PREDS=${WRK_DIR}/dev.preds
+ACC=${WRK_DIR}/accuracy
 LEARNING=${WRK_DIR}/learning.tsv
 
 CATID_TO_CATNAME_PICKLE=${WRK_DIR}/catid_to_catname.pickle
 FID_TO_FNAME_PICKLE=${WRK_DIR}/fid_to_fname.pickle
 
-for TRAIN_SET in conts
-#for TRAIN_SET in conts.strat
+
+for F_SETS in ${SETS_TO_RUN}
 do
-    # Results for conts.strat:
-    #
-    # 'bow'
-    # Accuracy = 63.7027% (2966/4656)
-    # 'comp'
-    # Accuracy = 64.4545% (3001/4656)
-    #
-    # 'comp brown-100'
-    # Accuracy = 63.5309% (2958/4656)
-    # 'comp brown-320'
-    # Accuracy = 63.3591% (2950/4656)
-    # 'comp brown-1000'
-    # Accuracy = 63.2517% (2945/4656)
-    # 'comp brown-3200'
-    # Accuracy = 64.2397% (2991/4656)
-    # 'comp brown-100 brown-320 brown-1000 brown-3200'
-    # Accuracy = 62.1778% (2895/4656)
-    # 'comp brown-100 brown-3200'
-    # Accuracy = 63.445% (2954/4656)
-    #
-    # 'comp pubmed_brown-150'
-    # Accuracy = 64.6263% (3009/4656)
-    # 'comp pubmed_brown-500'
-    # Accuracy = 65.1847% (3035/4656)
-    # 'comp pubmed_brown-1000'
-    # Accuracy = 66.4948% (3096/4656)
-    # 'comp pubmed_brown-150 pubmed_brown-500'
-    # Accuracy = 64.8411% (3019/4656)
-    # 'comp pubmed_brown-150 pubmed_brown-1000'
-    # Accuracy = 65.4854% (3049/4656)
-    # 'comp pubmed_brown-500 pubmed_brown-1000'
-    # Accuracy = 66.2801% (3086/4656)
-    # 'comp pubmed_brown-150 pubmed_brown-500 pubmed_brown-1000'
-    # Accuracy = 65.4639% (3048/4656)
-    #
-    # 'comp google'
-    # Accuracy = 69.1366% (3219/4656)
-    #
-    # 'comp david'
-    # Accuracy = 65.5069% (3050/4656)
-    #
-    # 'comp google david'
-    # Accuracy = 69.0077% (3213/4656)
-    # 'comp google pubmed_brown-150'
-    # Accuracy = 68.1271% (3172/4656)
-    # 'comp google pubmed_brown-1000'
-    # Accuracy = 68.4493% (3187/4656)
-    # 'comp google david pubmed_brown-150'
-    # Accuracy = 67.4828% (3142/4656)
-    # 'comp google david pubmed_brown-1000'
-    # Accuracy = 68.7285% (3200/4656)
-    # 'comp david pubmed_brown-150'
-    # Accuracy = 64.4759% (3002/4656)
-    # 'comp david pubmed_brown-500'
-    # Accuracy = 66.1727% (3081/4656)
-    # 'comp david pubmed_brown-1000'
-    # Accuracy = 66.9459% (3117/4656)
-    #
-    # "Unlexicalised":
-    # 'google'
-    # Accuracy = 59.3428% (2763/4656)
-    # 'david'
-    # Accuracy = 42.2036% (1965/4656)
-    # 'pubmed_brown-150'
-    # Accuracy = 45.9192% (2138/4656)
-    # 'pubmed_brown-500'
-    # Accuracy = 56.9802% (2653/4656)
-    # 'pubmed_brown-1000'
-    # Accuracy = 60.5885% (2821/4656)
-    # 'google david pubmed_brown-1000'
-    # Accuracy = 65.2277% (3037/4656)
-    # 'david pubmed_brown-150'
-    # Accuracy = 52.7277% (2455/4656)
-    # 'david pubmed_brown-500'
-    # Accuracy = 63.4665% (2955/4656)
-    # 'david pubmed_brown-1000'
-    # Accuracy = 62.3711% (2904/4656)
-    # 'david pubmed_brown-150 pubmed_brown-500'
-    # Accuracy = 58.9991% (2747/4656)
-    # 'david pubmed_brown-150 pubmed_brown-500 pubmed_brown-1000'
-    # Accuracy = 62.5644% (2913/4656)
-    # 'google pubmed_brown-1000'
-    # Accuracy = 64.39% (2998/4656)
-    # 'google david pubmed_brown-150 pubmed_brown-500 pubmed_brown-1000'
-    # Accuracy = 64.433% (3000/4656)
+    # To be safe, erase any existing generated features
+    rm -f ${TRAIN_FEATS} ${DEV_FEATS}
 
-    for F_SETS in \
-        'comp david pubmed_brown-1000'
+    # Generate the feature set arguments
+    F_ARGS=''
+    for F_SET in ${F_SETS}
     do
-        # To be safe, erase any existing generated features
-        rm -f ${TRAIN_FEATS} ${DEV_FEATS}
-
-        # Generate the feature set arguments
-        F_ARGS=''
-        for F_SET in ${F_SETS}
-        do
-            F_ARGS="${F_ARGS} -f ${F_SET}"
-        done
-
-        # Featurise for this feature
-        cat res/data/full/train.${TRAIN_SET} | ./featurise.py ${F_ARGS} \
-            > ${TRAIN_FEATS}
-        cat res/data/full/dev.conts.strat | ./featurise.py ${F_ARGS} \
-            > ${DEV_FEATS}
-
-        # Vectorise
-        cat ${TRAIN_FEATS} | ./vectorise.py ${CATID_TO_CATNAME_PICKLE} \
-            ${FID_TO_FNAME_PICKLE} > ${TRAIN_VECS}
-        cat ${DEV_FEATS} | ./vectorise.py ${CATID_TO_CATNAME_PICKLE} \
-            ${FID_TO_FNAME_PICKLE} > ${DEV_VECS}
-
-        # Train
-        ./optimisec.py -j ${JOBS} -p accuracy -c ${TRAIN_VECS} ${MODEL} \
-            > ${C_POW}
-
-        # Learning curve
-        ./learning.py -j ${JOBS} -c `cat ${C_POW}` ${TRAIN_VECS} ${DEV_VECS} \
-            > ${LEARNING}
-
-        # Evaluate
-        echo "Features: '${F_SETS}' on '${TRAIN_SET}'"
-        ext/liblinear/predict ${DEV_VECS} ${MODEL} ${PREDS}
+        F_ARGS="${F_ARGS} -f ${F_SET}"
     done
+
+    if [ "${USE_TEST}" == 'true' ]
+    then
+        TRAIN_DATA=`eval echo ${DATA_PATH}/{train,dev}.${TRAIN_SET}`
+        DEV_DATA=${DATA_PATH}/test.conts.strat
+    else
+        TRAIN_DATA=${DATA_PATH}/train.${TRAIN_SET}
+        DEV_DATA=${DATA_PATH}/dev.conts.strat
+    fi
+
+    # Featurise for this feature
+    cat ${TRAIN_DATA} | ./featurise.py ${F_ARGS} > ${TRAIN_FEATS}
+    cat ${DEV_DATA} | ./featurise.py ${F_ARGS} > ${DEV_FEATS}
+
+    # Vectorise
+    cat ${TRAIN_FEATS} | ./vectorise.py ${CATID_TO_CATNAME_PICKLE} \
+        ${FID_TO_FNAME_PICKLE} > ${TRAIN_VECS}
+    cat ${DEV_FEATS} | ./vectorise.py ${CATID_TO_CATNAME_PICKLE} \
+        ${FID_TO_FNAME_PICKLE} > ${DEV_VECS}
+
+    # Train
+    ./optimisec.py -j ${JOBS} -p accuracy -c ${TRAIN_VECS} ${MODEL} \
+        > ${C_POW}
+
+    # Learning curve
+    ./learning.py -j ${JOBS} -c `cat ${C_POW}` ${TRAIN_VECS} ${DEV_VECS} \
+        > ${LEARNING}
+
+    # Evaluate
+    echo "Features: '${F_SETS}' trained on '${TRAIN_SET}'"
+    ext/liblinear/predict ${DEV_VECS} ${MODEL} ${PREDS} > ${ACC}
+    cat ${ACC}
+
+    # Copy the results into the results directory
+    FNAME=`echo ${F_SETS} | sed -e 's| |_|g'`
+    cp ${LEARNING} results/${FNAME}_learning.tsv
+    cp ${ACC} results/${FNAME}_accuracy
 done
