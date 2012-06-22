@@ -271,8 +271,7 @@ def train_optimal_model(model_path, data_path, folds=10, seed=0x994c00d8,
             pool=pool, verbose=verbose,
             optimisation_target=optimisation_target)
     if print_c:
-        print >> stderr, 'Optimal C found: {} (C-POW: {})'.format(optimal_c,
-                log(optimal_c, 2))
+        print '{}'.format(int(log(optimal_c, 2)))
     _train_model(optimal_c, data_path, model_path)
 
 def main(args):
