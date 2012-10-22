@@ -8,9 +8,13 @@ Version:    2012-05-30
 from it import ngroup
 from re import compile as re_compile
 
+from sys import stderr
+
 ### Constants
 DIGIT_REGEX = re_compile(r'\d')
 ###
+
+
 
 # TODO: Naive, should not load it all into memory
 class DavidReader(object):
@@ -36,6 +40,42 @@ class BrownReader(object):
         for line in lines:
             cluster, token, _ = line.split('\t')
             self._table[token] = cluster
+        
+    def __getitem__(self, val):
+        return self._table[val]
+        
+class TsvReader(object):
+    """
+    This class reads a tab separated table file.
+    The rows are assumed to be the word representations.
+    The first column is supposed to contain the token, 
+    the remaining columns contain the values (float) of the representation vector.
+    All representation vectors have to be of the same length.
+    """
+    def __init__(self, lines, separator):
+        self._table = {}
+        # check whether all the lines have the same number of components
+        nTokens = None
+        for line in lines:
+            tokens = line.split(separator)
+            # Remove empty tokens 
+            # (in some files there might be multiple whitespaces between the columns)
+            tokens = filter(lambda x: x != "", tokens)
+            if nTokens == None:
+                nTokens = len(tokens)
+            else:
+                if nTokens != len(tokens):
+                    print >> stderr, "Error: all the vectors in the tsv wordrepr file should have the same length"
+            # Not really sparse actually, but using dict here to make it work with the rest of the tool
+            sparse_vector = {}
+            for i,val in enumerate(tokens[1:]):
+                # Ignore empty lines
+                if val == "":
+                    continue
+                # Fill the vector
+                sparse_vector[i] = float(val)
+            # Assign vector to word
+            self._table[tokens[0]] = sparse_vector
         
     def __getitem__(self, val):
         return self._table[val]

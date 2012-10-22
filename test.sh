@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Run a few tests over feature sets and what-not.
 #
@@ -7,7 +7,7 @@
 
 ### Configuration
 # Maximum number of processes to use (you can enjoy quite a speed-up)
-JOBS=1
+JOBS=4
 # Note: Only set this one to true for the final experiments
 USE_TEST=false
 # Path to all data
@@ -35,26 +35,44 @@ TRAIN_SET=conts.strat
 # 'comp google'
 
 # Feature set combinations to use for this run
-SETS_TO_RUN='
-    comp
-    comp david pubmed_brown-1000
-    comp google
-    bow
-    comp brown-100
-    comp brown-320
-    comp brown-1000
-    comp brown-3200
-    comp pubmed_brown-100
-    comp pubmed_brown-320
-    comp pubmed_brown-1000
-    comp david
-    '
+
+# SETS_TO_RUN='comp
+#     comp david pubmed_brown-1000
+#     comp google
+#     bow
+#     comp brown-100
+#     comp brown-320
+#     comp brown-1000
+#     comp brown-3200
+#     comp pubmed_brown-100
+#     comp pubmed_brown-320
+#     comp pubmed_brown-1000
+#     comp david
+#     hlbl-pubmed-100k
+#     hlbl-pubmed-500k
+#     hlbl-pubmed-100k-minmaxcol-norm
+#     hlbl-pubmed-500k-minmaxcol-norm
+#     hlbl-pubmed-100k-veclength-norm
+#     hlbl-pubmed-500k-veclength-norm
+#     hlbl-news-100d
+#     lspace-bio-170d
+#     lspace-bio-170d-prob
+#     lspace-bio-170d-exact
+#     lspace-bio-preprocessed
+#     speed-bio-50d
+
+SETS_TO_RUN='comp google
+comp pubmed_brown-100
+comp david
+comp hlbl-pubmed-100k'
+
 ###
 
 # Exit on error
 set -e
 
 WRK_DIR=wrk
+RESULTS_DIR=results
 TRAIN_FEATS=${WRK_DIR}/train.feats
 DEV_FEATS=${WRK_DIR}/dev.feats
 TRAIN_VECS=${WRK_DIR}/train.vecs
@@ -68,8 +86,9 @@ LEARNING=${WRK_DIR}/learning.tsv
 CATID_TO_CATNAME_PICKLE=${WRK_DIR}/catid_to_catname.pickle
 FID_TO_FNAME_PICKLE=${WRK_DIR}/fid_to_fname.pickle
 
+mkdir -p ${WRK_DIR} ${RESULTS_DIR}
 
-for F_SETS in ${SETS_TO_RUN}
+while read -r F_SETS
 do
     # To be safe, erase any existing generated features
     rm -f ${TRAIN_FEATS} ${DEV_FEATS}
@@ -89,6 +108,9 @@ do
         TRAIN_DATA=${DATA_PATH}/train.${TRAIN_SET}
         DEV_DATA=${DATA_PATH}/dev.conts.strat
     fi
+    
+    echo FSets ${F_SETS}
+    echo Fargs ${F_ARGS}
 
     # Featurise for this feature
     cat ${TRAIN_DATA} | ./featurise.py ${F_ARGS} > ${TRAIN_FEATS}
@@ -115,6 +137,6 @@ do
 
     # Copy the results into the results directory
     FNAME=`echo ${F_SETS} | sed -e 's| |_|g'`
-    cp ${LEARNING} results/${FNAME}_learning.tsv
-    cp ${ACC} results/${FNAME}_accuracy
-done
+    cp ${LEARNING} ${RESULTS_DIR}/${FNAME}_learning.tsv
+    cp ${ACC} ${RESULTS_DIR}/${FNAME}_accuracy
+done <<< "${SETS_TO_RUN}"
